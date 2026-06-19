@@ -9,9 +9,15 @@ import GestorMateriales from './GestorMateriales'
 import GestorInventario from './GestorInventario'
 import AdminNav from './AdminNav'
 
+// Datos fijos de la unidad (según tu imagen)
+const UNIDAD_RESPONSABLE = '030000 FAC'
+const CENTRO_COSTOS = 'DE DOCUMENTACIÓN'
+const ACTIVIDAD = '0009 ACTIVIDAD OPERATIVA'
+
 const BudgetSystem = () => {
   const [vistaActual, setVistaActual] = useState('presupuesto') // 'presupuesto', 'catalogo', 'inventario'
   const [articulosPresupuesto, setArticulosPresupuesto] = useState([])
+  const [todosArticulos, setTodosArticulos] = useState([]) // 🔥 NUEVO: Guardar todos los artículos (MAT + LIB)
   const [materialesDisponibles, setMaterialesDisponibles] = useState([])
   const [valoresPartidas, setValoresPartidas] = useState(() => {
     // Inicializar con valores base de cada partida
@@ -49,24 +55,43 @@ const BudgetSystem = () => {
         const materiales = await cargarMateriales()
         setMaterialesDisponibles(materiales)
 
-        // Cargar artículos del presupuesto
-        const presupuesto = await cargarPresupuesto(presupuestoId)
-        const articulosFormateados = presupuesto.map(item => ({
-          id: item.id,
-          codigo: item.materiales.codigo,
-          nombre: item.materiales.nombre,
-          precioPresupuesto: item.precio_presupuesto,
-          cantidades: {
-            marzo: item.cantidad_marzo,
-            agosto: item.cantidad_agosto
-          },
-          totales: {
-            marzo: item.precio_presupuesto * item.cantidad_marzo,
-            agosto: item.precio_presupuesto * item.cantidad_agosto,
-            total: (item.precio_presupuesto * item.cantidad_marzo) + (item.precio_presupuesto * item.cantidad_agosto)
+        // Cargar artículos del presupuesto CON FILTROS
+        const presupuesto = await cargarPresupuesto(
+          presupuestoId, 
+          UNIDAD_RESPONSABLE, 
+          CENTRO_COSTOS, 
+          ACTIVIDAD
+        )
+        
+        // 🔥 PROCESAR TODOS LOS ARTÍCULOS (MAT y LIB)
+        const articulosFormateados = presupuesto.map(item => {
+          const esLibro = item.materiales.codigo.startsWith('LIB')
+          const precio = esLibro ? 0 : item.precio_presupuesto
+          
+          return {
+            id: item.id,
+            codigo: item.materiales.codigo,
+            nombre: item.materiales.nombre,
+            esLibro: esLibro,
+            precioPresupuesto: precio,
+            cantidades: {
+              marzo: item.cantidad_marzo,
+              agosto: item.cantidad_agosto
+            },
+            totales: {
+              marzo: precio * item.cantidad_marzo,
+              agosto: precio * item.cantidad_agosto,
+              total: (precio * item.cantidad_marzo) + (precio * item.cantidad_agosto)
+            }
           }
-        }))
-        setArticulosPresupuesto(articulosFormateados)
+        })
+
+        // 🔥 Guardar TODOS los artículos para el inventario
+        setTodosArticulos(articulosFormateados)
+
+        // 🔥 Solo MAT en el presupuesto (los LIB van al inventario)
+        const articulosMAT = articulosFormateados.filter(a => !a.esLibro)
+        setArticulosPresupuesto(articulosMAT)
 
         // Cargar valores de partidas
         const valores = await cargarValoresPartidas(presupuestoId)
@@ -110,19 +135,29 @@ const BudgetSystem = () => {
   // Función para agregar un nuevo artículo al presupuesto
   const agregarArticulo = async (articulo, cantidadMarzo = 0, cantidadAgosto = 0, precioCustom = null) => {
     try {
+      // 🔥 Si es libro (código LIB), NO guardar en presupuesto
+      if (articulo.codigo.startsWith('LIB')) {
+        mostrarNotificacion('📚 Los libros solo se gestionan en el inventario, no tienen costo.', 'info')
+        return
+      }
+      
       const precioFinal = precioCustom || articulo.precio
       const nuevoArticulo = await guardarArticuloPresupuesto(
         presupuestoId, 
         articulo.id, 
         cantidadMarzo, 
         cantidadAgosto, 
-        precioFinal
+        precioFinal,
+        UNIDAD_RESPONSABLE,
+        CENTRO_COSTOS,
+        ACTIVIDAD
       )
       
       const articuloFormateado = {
         id: nuevoArticulo.id,
         codigo: nuevoArticulo.materiales.codigo,
         nombre: nuevoArticulo.materiales.nombre,
+        esLibro: false,
         precioPresupuesto: nuevoArticulo.precio_presupuesto,
         cantidades: {
           marzo: nuevoArticulo.cantidad_marzo,
@@ -136,8 +171,11 @@ const BudgetSystem = () => {
       }
       
       setArticulosPresupuesto(prev => [...prev, articuloFormateado])
+      // 🔥 También agregar a todosArticulos
+      setTodosArticulos(prev => [...prev, articuloFormateado])
+      mostrarNotificacion(`Artículo "${articulo.nombre}" agregado al presupuesto`, 'success')
     } catch (err) {
-      alert('Error al agregar artículo: ' + err.message)
+      mostrarNotificacion('Error al agregar artículo: ' + err.message, 'error')
     }
   }
 
@@ -146,8 +184,10 @@ const BudgetSystem = () => {
     try {
       await eliminarArticuloPresupuesto(id)
       setArticulosPresupuesto(prev => prev.filter(art => art.id !== id))
+      setTodosArticulos(prev => prev.filter(art => art.id !== id))
+      mostrarNotificacion('Artículo eliminado del presupuesto', 'success')
     } catch (err) {
-      alert('Error al eliminar artículo: ' + err.message)
+      mostrarNotificacion('Error al eliminar artículo: ' + err.message, 'error')
     }
   }
 
@@ -179,8 +219,32 @@ const BudgetSystem = () => {
         }
         return art
       }))
+      
+      // 🔥 También actualizar en todosArticulos
+      setTodosArticulos(prev => prev.map(art => {
+        if (art.id === id) {
+          const updated = { ...art }
+          
+          if (campo === 'precioPresupuesto') {
+            updated.precioPresupuesto = parseFloat(valor) || 0
+          } else if (campo === 'cantidadMarzo') {
+            updated.cantidades.marzo = parseInt(valor) || 0
+          } else if (campo === 'cantidadAgosto') {
+            updated.cantidades.agosto = parseInt(valor) || 0
+          }
+          
+          updated.totales = {
+            marzo: updated.precioPresupuesto * updated.cantidades.marzo,
+            agosto: updated.precioPresupuesto * updated.cantidades.agosto,
+            total: (updated.precioPresupuesto * updated.cantidades.marzo) + (updated.precioPresupuesto * updated.cantidades.agosto)
+          }
+          
+          return updated
+        }
+        return art
+      }))
     } catch (err) {
-      alert('Error al actualizar artículo: ' + err.message)
+      mostrarNotificacion('Error al actualizar artículo: ' + err.message, 'error')
     }
   }
 
@@ -203,10 +267,19 @@ const BudgetSystem = () => {
   // Función para agregar nuevo material al catálogo
   const agregarNuevoMaterial = async (codigo, nombre, precio) => {
     try {
-      const nuevoMaterial = await agregarMaterial(codigo, nombre, precio)
-      setMaterialesDisponibles(prev => [...prev, nuevoMaterial])
+      // 🔥 Validar que el código no empiece con LIB (los libros no tienen costo)
+      if (codigo.startsWith('LIB')) {
+        // Los libros se guardan con precio 0
+        const nuevoMaterial = await agregarMaterial(codigo, nombre, 0)
+        setMaterialesDisponibles(prev => [...prev, nuevoMaterial])
+        mostrarNotificacion(`📚 Libro "${nombre}" agregado al catálogo (sin costo)`, 'success')
+      } else {
+        const nuevoMaterial = await agregarMaterial(codigo, nombre, precio)
+        setMaterialesDisponibles(prev => [...prev, nuevoMaterial])
+        mostrarNotificacion(`Material "${nombre}" agregado al catálogo`, 'success')
+      }
     } catch (err) {
-      alert('Error al agregar material: ' + err.message)
+      mostrarNotificacion('Error al agregar material: ' + err.message, 'error')
     }
   }
 
@@ -215,38 +288,63 @@ const BudgetSystem = () => {
     try {
       const material = materialesDisponibles.find(m => m.codigo === codigoOriginal)
       if (material) {
-        await editarMaterial(material.id, nuevoCodigo, nuevoNombre, nuevoPrecio)
+        // 🔥 Si es libro, el precio siempre es 0
+        const precioFinal = codigoOriginal.startsWith('LIB') ? 0 : parseFloat(nuevoPrecio) || 0
+        
+        await editarMaterial(material.id, nuevoCodigo, nuevoNombre, precioFinal)
         
         // Actualizar catálogo de materiales
         setMaterialesDisponibles(prev => prev.map(m => 
           m.id === material.id 
-            ? { ...m, codigo: nuevoCodigo, nombre: nuevoNombre, precio: parseFloat(nuevoPrecio) || 0 }
+            ? { ...m, codigo: nuevoCodigo, nombre: nuevoNombre, precio: precioFinal }
             : m
         ))
 
-        // Actualizar artículos del presupuesto que tengan este código
-        setArticulosPresupuesto(prev => prev.map(articulo => {
-          if (articulo.codigo === codigoOriginal) {
-            const nuevoPrecioNum = parseFloat(nuevoPrecio) || 0
-            // Recalcular totales con el nuevo precio
-            const nuevosTotales = {
-              marzo: articulo.cantidades.marzo * nuevoPrecioNum,
-              agosto: articulo.cantidades.agosto * nuevoPrecioNum,
-              total: (articulo.cantidades.marzo * nuevoPrecioNum) + (articulo.cantidades.agosto * nuevoPrecioNum)
+        // Actualizar artículos del presupuesto que tengan este código (solo si no es libro)
+        if (!codigoOriginal.startsWith('LIB')) {
+          setArticulosPresupuesto(prev => prev.map(articulo => {
+            if (articulo.codigo === codigoOriginal) {
+              const nuevoPrecioNum = parseFloat(nuevoPrecio) || 0
+              const nuevosTotales = {
+                marzo: articulo.cantidades.marzo * nuevoPrecioNum,
+                agosto: articulo.cantidades.agosto * nuevoPrecioNum,
+                total: (articulo.cantidades.marzo * nuevoPrecioNum) + (articulo.cantidades.agosto * nuevoPrecioNum)
+              }
+              
+              return {
+                ...articulo,
+                codigo: nuevoCodigo,
+                nombre: nuevoNombre,
+                precioPresupuesto: nuevoPrecioNum,
+                totales: nuevosTotales
+              }
             }
-            
-            return {
-              ...articulo,
-              codigo: nuevoCodigo,
-              nombre: nuevoNombre,
-              precioPresupuesto: nuevoPrecioNum, // Campo correcto para la tabla
-              totales: nuevosTotales
+            return articulo
+          }))
+          
+          // 🔥 También actualizar en todosArticulos
+          setTodosArticulos(prev => prev.map(articulo => {
+            if (articulo.codigo === codigoOriginal) {
+              const nuevoPrecioNum = parseFloat(nuevoPrecio) || 0
+              const nuevosTotales = {
+                marzo: articulo.cantidades.marzo * nuevoPrecioNum,
+                agosto: articulo.cantidades.agosto * nuevoPrecioNum,
+                total: (articulo.cantidades.marzo * nuevoPrecioNum) + (articulo.cantidades.agosto * nuevoPrecioNum)
+              }
+              
+              return {
+                ...articulo,
+                codigo: nuevoCodigo,
+                nombre: nuevoNombre,
+                precioPresupuesto: nuevoPrecioNum,
+                totales: nuevosTotales
+              }
             }
-          }
-          return articulo
-        }))
+            return articulo
+          }))
+        }
 
-        mostrarNotificacion(`Material "${nuevoNombre}" actualizado correctamente en catálogo y presupuesto`, 'success')
+        mostrarNotificacion(`Material "${nuevoNombre}" actualizado correctamente`, 'success')
       }
     } catch (err) {
       mostrarNotificacion('Error al editar material: ' + err.message, 'error')
@@ -258,8 +356,8 @@ const BudgetSystem = () => {
     try {
       const material = materialesDisponibles.find(m => m.codigo === codigo)
       if (material) {
-        // Verificar si el material está siendo usado en el presupuesto
-        const enUso = articulosPresupuesto.some(art => art.codigo === codigo)
+        // Verificar si el material está siendo usado en el presupuesto (solo para no-libros)
+        const enUso = !codigo.startsWith('LIB') && articulosPresupuesto.some(art => art.codigo === codigo)
         
         if (enUso) {
           if (!confirm(`El material "${material.nombre}" está siendo usado en el presupuesto. ¿Deseas eliminarlo del catálogo y del presupuesto?`)) {
@@ -273,6 +371,7 @@ const BudgetSystem = () => {
         // Eliminar también del presupuesto si está en uso
         if (enUso) {
           setArticulosPresupuesto(prev => prev.filter(art => art.codigo !== codigo))
+          setTodosArticulos(prev => prev.filter(art => art.codigo !== codigo))
           mostrarNotificacion(`Material "${material.nombre}" eliminado del catálogo y del presupuesto`, 'success')
         } else {
           mostrarNotificacion(`Material "${material.nombre}" eliminado del catálogo`, 'success')
@@ -292,7 +391,7 @@ const BudgetSystem = () => {
   const handleExportarPresupuesto = () => {
     try {
       if (articulosPresupuesto.length === 0) {
-        alert('❌ No hay artículos en el presupuesto para exportar. Agrega algunos artículos primero.')
+        mostrarNotificacion('No hay artículos en el presupuesto para exportar', 'error')
         return
       }
 
@@ -323,10 +422,10 @@ const BudgetSystem = () => {
       if (exito) {
         mostrarNotificacion(`Presupuesto exportado exitosamente como "${nombreArchivo}.xlsx"`, 'success')
       } else {
-        mostrarNotificacion('Error al exportar el presupuesto. Inténtalo de nuevo.', 'error')
+        mostrarNotificacion('Error al exportar el presupuesto', 'error')
       }
     } catch (error) {
-      mostrarNotificacion('Error al exportar el presupuesto.', 'error')
+      mostrarNotificacion('Error al exportar el presupuesto', 'error')
     }
   }
 
@@ -367,7 +466,7 @@ const BudgetSystem = () => {
       {/* Botón de cerrar sesión */}
       <AdminNav />
       
-      {/* Banner del encabezado - Ocupa toda la pantalla */}
+      {/* Banner del encabezado */}
       <div className="w-full h-[150px] overflow-hidden">
         <img 
           src="/REPOSITORIO DE EXAMENES.png" 
@@ -384,13 +483,18 @@ const BudgetSystem = () => {
             <div className={`rounded-lg shadow-lg p-4 flex items-center space-x-3 max-w-md ${
               notificacion.tipo === 'success' 
                 ? 'bg-green-50 border border-green-200 text-green-800' 
+                : notificacion.tipo === 'info'
+                ? 'bg-blue-50 border border-blue-200 text-blue-800'
                 : 'bg-red-50 border border-red-200 text-red-800'
             }`}>
-              {/* Icono */}
               <div className="flex-shrink-0">
                 {notificacion.tipo === 'success' ? (
                   <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                ) : notificacion.tipo === 'info' ? (
+                  <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                   </svg>
                 ) : (
                   <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
@@ -398,9 +502,7 @@ const BudgetSystem = () => {
                   </svg>
                 )}
               </div>
-              {/* Mensaje */}
               <p className="text-sm font-medium">{notificacion.mensaje}</p>
-              {/* Botón cerrar */}
               <button
                 onClick={() => setNotificacion(null)}
                 className="flex-shrink-0 ml-auto text-gray-400 hover:text-gray-600"
@@ -412,11 +514,8 @@ const BudgetSystem = () => {
             </div>
           </div>
         )}
-        
-        {/* Header con imagen */}
 
-
-        {/* Navegación por pestañas simplificada */}
+        {/* Navegación por pestañas */}
         <div className="bg-white rounded-lg shadow-md mb-6">
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8 px-6">
@@ -428,7 +527,7 @@ const BudgetSystem = () => {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-              💲Sistema de Presupuesto
+              💲 Sistema de Presupuesto
               </button>
               <button
                 onClick={() => setVistaActual('catalogo')}
@@ -448,9 +547,8 @@ const BudgetSystem = () => {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                📦 Inventario ({articulosPresupuesto.length})
+                📦 Inventario ({todosArticulos.filter(a => a.esLibro).length})
               </button>
-
             </nav>
           </div>
         </div>
@@ -488,9 +586,11 @@ const BudgetSystem = () => {
                 </button>
               </div>
               <ArticuloSelector 
-                articulos={materialesDisponibles}
+                articulos={materialesDisponibles.filter(m => !m.codigo.startsWith('LIB'))}
                 onAgregarArticulo={agregarArticulo}
               />
+              <p className="text-xs text-gray-500 mt-2">
+              </p>
             </div>
 
             {/* Tabla de artículos del presupuesto */}
@@ -513,23 +613,19 @@ const BudgetSystem = () => {
               />
             </div>
 
-            {/* Botón de exportación al final */}
+            {/* Botón de exportación */}
             {articulosPresupuesto.length > 0 && (
               <div className="bg-white p-6 rounded-lg shadow-md">
                 <div className="text-center">
                   <button
                     onClick={handleExportarPresupuesto}
                     className="px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold text-lg flex items-center space-x-3 mx-auto"
-                    title="Exportar presupuesto completo a Excel"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     <span>Exportar Presupuesto a Excel</span>
                   </button>
-                  <p className="text-gray-600 text-sm mt-2">
-                    Descarga el presupuesto completo con resumen por partidas y detalle de artículos
-                  </p>
                 </div>
               </div>
             )}
@@ -544,7 +640,7 @@ const BudgetSystem = () => {
               </div>
               <button
                 onClick={() => setVistaActual('presupuesto')}
-                className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
               >
                 ← Volver al Presupuesto
               </button>
@@ -562,15 +658,14 @@ const BudgetSystem = () => {
             <div className="mb-6 flex justify-start">
               <button
                 onClick={() => setVistaActual('presupuesto')}
-                className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
               >
                 ← Volver al Presupuesto
               </button>
             </div>
             <GestorInventario 
-              articulosPresupuesto={articulosPresupuesto}
+              articulosPresupuesto={todosArticulos} // 🔥 PASAR TODOS LOS ARTÍCULOS (MAT + LIB)
               onActualizarInventario={(inventarioData) => {
-                // TODO: Guardar datos del inventario
                 console.log('Datos del inventario:', inventarioData)
               }}
             />

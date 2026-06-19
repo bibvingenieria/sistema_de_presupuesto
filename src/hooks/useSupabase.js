@@ -81,17 +81,31 @@ export const useSupabase = () => {
     }
   }
 
-  // Cargar presupuesto con artículos
-  const cargarPresupuesto = async (presupuestoId = 1) => {
+  // Cargar presupuesto con artículos (CON FILTROS)
+  const cargarPresupuesto = async (presupuestoId = 1, unidadResponsable = null, centroCostos = null, actividad = null) => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
+      
+      let query = supabase
         .from('presupuesto_articulos')
         .select(`
           *,
           materiales (codigo, nombre, precio)
         `)
         .eq('presupuesto_id', presupuestoId)
+      
+      // Aplicar filtros si se proporcionan
+      if (unidadResponsable) {
+        query = query.eq('unidad_responsable', unidadResponsable)
+      }
+      if (centroCostos) {
+        query = query.eq('centro_costos', centroCostos)
+      }
+      if (actividad) {
+        query = query.eq('actividad', actividad)
+      }
+      
+      const { data, error } = await query
       
       if (error) throw error
       return data
@@ -103,8 +117,8 @@ export const useSupabase = () => {
     }
   }
 
-  // Guardar artículo en presupuesto
-  const guardarArticuloPresupuesto = async (presupuestoId, materialId, cantidadMarzo, cantidadAgosto, precioPresupuesto) => {
+  // Guardar artículo en presupuesto (CON FILTROS)
+  const guardarArticuloPresupuesto = async (presupuestoId, materialId, cantidadMarzo, cantidadAgosto, precioPresupuesto, unidadResponsable, centroCostos, actividad) => {
     try {
       setLoading(true)
       const { data, error } = await supabase
@@ -114,7 +128,10 @@ export const useSupabase = () => {
           material_id: materialId,
           cantidad_marzo: cantidadMarzo,
           cantidad_agosto: cantidadAgosto,
-          precio_presupuesto: precioPresupuesto
+          precio_presupuesto: precioPresupuesto,
+          unidad_responsable: unidadResponsable,
+          centro_costos: centroCostos,
+          actividad: actividad
         }])
         .select(`
           *,
