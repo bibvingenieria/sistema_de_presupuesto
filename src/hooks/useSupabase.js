@@ -262,6 +262,109 @@ export const useSupabase = () => {
     }
   }
 
+    // Cargar stock de todos los materiales
+  const cargarStockMateriales = async () => {
+    try {
+      setLoading(true)
+
+      const { data: materiales, error: materialesError } = await supabase
+        .from('materiales')
+        .select('*')
+        .order('nombre')
+
+      if (materialesError) throw materialesError
+
+      const { data: movimientos, error: movimientosError } = await supabase
+        .from('movimientos_materiales')
+        .select('material_id, tipo, cantidad')
+
+      if (movimientosError) throw movimientosError
+
+      const materialesConStock = materiales.map(material => {
+        const movimientosMaterial = movimientos.filter(
+          movimiento => movimiento.material_id === material.id
+        )
+
+        const entradas = movimientosMaterial
+          .filter(movimiento => movimiento.tipo === 'ENTRADA')
+          .reduce((total, movimiento) => total + movimiento.cantidad, 0)
+
+        const salidas = movimientosMaterial
+          .filter(movimiento => movimiento.tipo === 'SALIDA')
+          .reduce((total, movimiento) => total + movimiento.cantidad, 0)
+
+        const stockActual = entradas - salidas
+
+        return {
+          ...material,
+          stockActual
+        }
+      })
+
+      return materialesConStock
+    } catch (err) {
+      setError(err.message)
+      return []
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Cargar historial de movimientos de un material
+  const cargarMovimientosMaterial = async (materialId) => {
+    try {
+      setLoading(true)
+
+      const { data, error } = await supabase
+        .from('movimientos_materiales')
+        .select('*')
+        .eq('material_id', materialId)
+        .order('fecha', { ascending: false })
+
+      if (error) throw error
+
+      return data
+    } catch (err) {
+      setError(err.message)
+      return []
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Registrar entrada o salida de material
+  const registrarMovimientoMaterial = async (
+    materialId,
+    tipo,
+    cantidad,
+    motivo,
+    observacion = null
+  ) => {
+    try {
+      setLoading(true)
+
+      const { data, error } = await supabase.rpc(
+        'registrar_movimiento_material',
+        {
+          p_material_id: materialId,
+          p_tipo: tipo,
+          p_cantidad: parseInt(cantidad),
+          p_motivo: motivo,
+          p_observacion: observacion
+        }
+      )
+
+      if (error) throw error
+
+      return data
+    } catch (err) {
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return {
     loading,
     error,
@@ -274,6 +377,9 @@ export const useSupabase = () => {
     actualizarArticuloPresupuesto,
     eliminarArticuloPresupuesto,
     cargarValoresPartidas,
-    guardarValorPartida
+    guardarValorPartida,
+    cargarStockMateriales,
+    cargarMovimientosMaterial,
+    registrarMovimientoMaterial
   }
 }

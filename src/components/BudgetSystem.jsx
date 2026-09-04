@@ -7,6 +7,7 @@ import TablaArticulos from './TablaArticulos'
 import ResumenPartidas from './ResumenPartidas'
 import GestorMateriales from './GestorMateriales'
 import GestorInventario from './GestorInventario'
+import GestorStock from './GestorStock'
 import AdminNav from './AdminNav'
 
 // Datos fijos de la unidad (según tu imagen)
@@ -44,8 +45,11 @@ const BudgetSystem = () => {
     actualizarArticuloPresupuesto,
     eliminarArticuloPresupuesto,
     cargarValoresPartidas,
-    guardarValorPartida
-  } = useSupabase()
+    guardarValorPartida,
+    cargarStockMateriales,
+    cargarMovimientosMaterial,
+    registrarMovimientoMaterial
+} = useSupabase()
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -540,6 +544,16 @@ const BudgetSystem = () => {
                 ⚙️ Gestionar Catálogo ({materialesDisponibles.length})
               </button>
               <button
+                onClick={() => setVistaActual('materiales')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  vistaActual === 'materiales'
+                    ? 'border-emerald-500 text-emerald-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >   
+                📦 Gestión de Materiales
+              </button>
+              <button
                 onClick={() => setVistaActual('inventario')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
                   vistaActual === 'inventario'
@@ -549,6 +563,7 @@ const BudgetSystem = () => {
               >
                 📦 Inventario ({todosArticulos.filter(a => a.esLibro).length})
               </button>
+              
             </nav>
           </div>
         </div>
@@ -652,6 +667,14 @@ const BudgetSystem = () => {
               onEliminarMaterial={eliminarMaterialCatalogo}
             />
           </div>
+        ) : vistaActual === 'materiales' ? (
+          // Vista de Gestión de Materiales
+          <GestorStock
+            materiales={materialesDisponibles}
+            cargarStockMateriales={cargarStockMateriales}
+            cargarMovimientosMaterial={cargarMovimientosMaterial}
+            registrarMovimientoMaterial={registrarMovimientoMaterial}
+          />
         ) : (
           // Vista del Gestor de Inventario
           <div>
