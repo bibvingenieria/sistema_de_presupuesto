@@ -9,6 +9,7 @@ import GestorMateriales from './GestorMateriales'
 import GestorInventario from './GestorInventario'
 import GestorStock from './GestorStock'
 import AdminNav from './AdminNav'
+import GestorComputadoras from './GestorComputadoras'
 
 // Datos fijos de la unidad (según tu imagen)
 const UNIDAD_RESPONSABLE = '030000 FAC'
@@ -48,7 +49,11 @@ const BudgetSystem = () => {
     guardarValorPartida,
     cargarStockMateriales,
     cargarMovimientosMaterial,
-    registrarMovimientoMaterial
+    registrarMovimientoMaterial,
+    cargarComputadoras,
+    agregarComputadora,
+    editarComputadora,
+    eliminarComputadora
 } = useSupabase()
 
   // Cargar datos iniciales
@@ -175,7 +180,7 @@ const BudgetSystem = () => {
       }
       
       setArticulosPresupuesto(prev => [...prev, articuloFormateado])
-      // 🔥 También agregar a todosArticulos
+      // También agregar a todosArticulos
       setTodosArticulos(prev => [...prev, articuloFormateado])
       mostrarNotificacion(`Artículo "${articulo.nombre}" agregado al presupuesto`, 'success')
     } catch (err) {
@@ -563,6 +568,17 @@ const BudgetSystem = () => {
               >
                 📦 Inventario ({todosArticulos.filter(a => a.esLibro).length})
               </button>
+
+              <button
+                onClick={() => setVistaActual('computadoras')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  vistaActual === 'computadoras'
+                   ? 'border-emerald-500 text-emerald-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                💻 Inventario de PC
+              </button>
               
             </nav>
           </div>
@@ -668,13 +684,19 @@ const BudgetSystem = () => {
             />
           </div>
         ) : vistaActual === 'materiales' ? (
-          // Vista de Gestión de Materiales
-          <GestorStock
-            materiales={materialesDisponibles}
-            cargarStockMateriales={cargarStockMateriales}
-            cargarMovimientosMaterial={cargarMovimientosMaterial}
-            registrarMovimientoMaterial={registrarMovimientoMaterial}
-          />
+            <GestorStock
+              materiales={materialesDisponibles}
+              cargarStockMateriales={cargarStockMateriales}
+              cargarMovimientosMaterial={cargarMovimientosMaterial}
+              registrarMovimientoMaterial={registrarMovimientoMaterial}
+            />
+        ) : vistaActual === 'computadoras' ? (
+            <GestorComputadoras
+              cargarComputadoras={cargarComputadoras}
+              agregarComputadora={agregarComputadora}
+              editarComputadora={editarComputadora}
+              eliminarComputadora={eliminarComputadora}
+            />
         ) : (
           // Vista del Gestor de Inventario
           <div>

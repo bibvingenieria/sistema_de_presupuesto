@@ -365,6 +365,111 @@ export const useSupabase = () => {
     }
   }
 
+    // ==========================================
+  // INVENTARIO DE COMPUTADORAS
+  // ==========================================
+
+  // Cargar todas las computadoras
+  const cargarComputadoras = async () => {
+    try {
+      setLoading(true)
+
+      const { data, error } = await supabase
+        .from('computadoras')
+        .select('*')
+        .order('codigo')
+
+      if (error) throw error
+
+      return data || []
+    } catch (err) {
+      setError(err.message)
+      return []
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Agregar una nueva computadora
+  const agregarComputadora = async (computadora) => {
+    try {
+      setLoading(true)
+
+      const datos = {
+        ...computadora,
+        ram_gb: computadora.ram_gb
+          ? parseInt(computadora.ram_gb)
+          : null
+      }
+
+      const { data, error } = await supabase
+        .from('computadoras')
+        .insert([datos])
+        .select()
+        .single()
+
+      if (error) throw error
+
+      return data
+    } catch (err) {
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Editar una computadora existente
+  const editarComputadora = async (id, computadora) => {
+    try {
+      setLoading(true)
+
+      const datos = {
+        ...computadora,
+        ram_gb: computadora.ram_gb
+          ? parseInt(computadora.ram_gb)
+          : null
+      }
+
+      const { data, error } = await supabase
+        .from('computadoras')
+        .update(datos)
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      return data
+    } catch (err) {
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Eliminar una computadora
+  const eliminarComputadora = async (id) => {
+    try {
+      setLoading(true)
+
+      const { error } = await supabase
+        .from('computadoras')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+
+      return true
+    } catch (err) {
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return {
     loading,
     error,
@@ -380,6 +485,11 @@ export const useSupabase = () => {
     guardarValorPartida,
     cargarStockMateriales,
     cargarMovimientosMaterial,
-    registrarMovimientoMaterial
+    registrarMovimientoMaterial,
+    cargarComputadoras,
+    agregarComputadora,
+    editarComputadora,
+    eliminarComputadora
+    
   }
 }
