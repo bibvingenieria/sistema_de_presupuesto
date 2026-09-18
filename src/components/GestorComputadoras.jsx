@@ -7,38 +7,59 @@ const estados = [
   'Sin verificar'
 ]
 
+const salasDisponibles = [
+  'Sala A',
+  'Sala B',
+  'Sala C',
+  'Sala de Control',
+  'Jefatura'
+]
+
 const formularioInicial = {
+  // Identificación y ubicación
   codigo: '',
   sala: '',
   ubicacion: '',
   marca_pc: '',
   modelo_pc: '',
   service_tag: '',
+  numero_serie: '',
+
+  // CPU
+  cpu_codigo_inventario: '',
   cpu: '',
   ram_gb: '',
   disco: '',
   sistema_operativo: '',
+
+  // Monitor
+  monitor_codigo_inventario: '',
   monitor_marca: '',
   monitor_modelo: '',
   monitor_serie: '',
+
+  // Teclado
+  teclado_codigo_inventario: '',
   teclado_marca: '',
   teclado_modelo: '',
   teclado_serie: '',
+
+  // Mouse
+  mouse_codigo_inventario: '',
   mouse_marca: '',
   mouse_modelo: '',
   mouse_serie: '',
+
+  // Estado
   estado: 'Operativo',
   observaciones: ''
 }
 
-/* =========================================================
-   CAMPO REUTILIZABLE
-   Se encuentra FUERA de GestorComputadoras para evitar
-   que el input pierda el foco en cada escritura.
-========================================================= */
+// =========================================================
+// CAMPO REUTILIZABLE
+// =========================================================
 
 const Campo = ({
-  nombre,
   etiqueta,
   tipo = 'text',
   placeholder = '',
@@ -62,6 +83,24 @@ const Campo = ({
   )
 }
 
+// =========================================================
+// TÍTULO DE COMPONENTE
+// =========================================================
+
+const TituloComponente = ({ icono, titulo }) => {
+  return (
+    <div className="mb-4">
+      <h5 className="text-base font-semibold text-gray-800">
+        {icono} {titulo}
+      </h5>
+    </div>
+  )
+}
+
+// =========================================================
+// COMPONENTE PRINCIPAL
+// =========================================================
+
 const GestorComputadoras = ({
   cargarComputadoras,
   agregarComputadora,
@@ -83,19 +122,24 @@ const GestorComputadoras = ({
 
   const [guardando, setGuardando] = useState(false)
   const [mensaje, setMensaje] = useState(null)
+
+  // =========================================================
+  // OCULTAR MENSAJE AUTOMÁTICAMENTE
+  // =========================================================
+
   useEffect(() => {
-  if (!mensaje) return
+    if (!mensaje) return
 
-  const temporizador = setTimeout(() => {
-    setMensaje(null)
-  }, 3000)
+    const temporizador = setTimeout(() => {
+      setMensaje(null)
+    }, 3000)
 
-  return () => clearTimeout(temporizador)
-}, [mensaje])
+    return () => clearTimeout(temporizador)
+  }, [mensaje])
 
-  // ==========================================
+  // =========================================================
   // CARGAR COMPUTADORAS
-  // ==========================================
+  // =========================================================
 
   const cargarDatos = async () => {
     try {
@@ -115,21 +159,9 @@ const GestorComputadoras = ({
     cargarDatos()
   }, [])
 
-  // ==========================================
-  // SALAS DISPONIBLES
-  // ==========================================
-
-  const salas = useMemo(() => {
-    const lista = computadoras
-      .map(computadora => computadora.sala)
-      .filter(Boolean)
-
-    return [...new Set(lista)].sort()
-  }, [computadoras])
-
-  // ==========================================
+  // =========================================================
   // ESTADÍSTICAS
-  // ==========================================
+  // =========================================================
 
   const estadisticas = useMemo(() => {
     const total = computadoras.length
@@ -154,9 +186,9 @@ const GestorComputadoras = ({
     }
   }, [computadoras])
 
-  // ==========================================
+  // =========================================================
   // FILTRAR COMPUTADORAS
-  // ==========================================
+  // =========================================================
 
   const computadorasFiltradas = useMemo(() => {
     return computadoras.filter(computadora => {
@@ -169,19 +201,33 @@ const GestorComputadoras = ({
         computadora.marca_pc,
         computadora.modelo_pc,
         computadora.service_tag,
+        computadora.numero_serie,
+
+        // CPU
+        computadora.cpu_codigo_inventario,
         computadora.cpu,
         computadora.ram_gb,
         computadora.disco,
         computadora.sistema_operativo,
+
+        // Monitor
+        computadora.monitor_codigo_inventario,
         computadora.monitor_marca,
         computadora.monitor_modelo,
         computadora.monitor_serie,
+
+        // Teclado
+        computadora.teclado_codigo_inventario,
         computadora.teclado_marca,
         computadora.teclado_modelo,
         computadora.teclado_serie,
+
+        // Mouse
+        computadora.mouse_codigo_inventario,
         computadora.mouse_marca,
         computadora.mouse_modelo,
         computadora.mouse_serie,
+
         computadora.estado
       ]
         .filter(Boolean)
@@ -212,9 +258,9 @@ const GestorComputadoras = ({
     filtroEstado
   ])
 
-  // ==========================================
+  // =========================================================
   // ABRIR NUEVA PC
-  // ==========================================
+  // =========================================================
 
   const abrirNuevo = () => {
     setFormulario({
@@ -227,9 +273,9 @@ const GestorComputadoras = ({
     setMostrarFormulario(true)
   }
 
-  // ==========================================
+  // =========================================================
   // ABRIR EDICIÓN
-  // ==========================================
+  // =========================================================
 
   const abrirEditar = computadora => {
     setFormulario({
@@ -244,9 +290,9 @@ const GestorComputadoras = ({
     setMostrarFormulario(true)
   }
 
-  // ==========================================
+  // =========================================================
   // CERRAR FORMULARIO
-  // ==========================================
+  // =========================================================
 
   const cerrarFormulario = () => {
     setMostrarFormulario(false)
@@ -260,9 +306,9 @@ const GestorComputadoras = ({
     setMensaje(null)
   }
 
-  // ==========================================
+  // =========================================================
   // CAMBIAR CAMPO
-  // ==========================================
+  // =========================================================
 
   const cambiarCampo = (campo, valor) => {
     setFormulario(actual => ({
@@ -271,9 +317,9 @@ const GestorComputadoras = ({
     }))
   }
 
-  // ==========================================
+  // =========================================================
   // GUARDAR
-  // ==========================================
+  // =========================================================
 
   const guardarComputadora = async () => {
     if (!formulario.codigo.trim()) {
@@ -330,9 +376,9 @@ const GestorComputadoras = ({
     }
   }
 
-  // ==========================================
+  // =========================================================
   // ELIMINAR
-  // ==========================================
+  // =========================================================
 
   const eliminar = async computadora => {
     const confirmar = window.confirm(
@@ -362,9 +408,9 @@ const GestorComputadoras = ({
     }
   }
 
-  // ==========================================
+  // =========================================================
   // ESTADO
-  // ==========================================
+  // =========================================================
 
   const obtenerEstado = estado => {
     switch (estado) {
@@ -397,9 +443,9 @@ const GestorComputadoras = ({
   return (
     <div className="space-y-6">
 
-      {/* ==========================================
+      {/* =====================================================
           ENCABEZADO
-      ========================================== */}
+      ===================================================== */}
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 
@@ -422,9 +468,9 @@ const GestorComputadoras = ({
 
       </div>
 
-      {/* ==========================================
+      {/* =====================================================
           INDICADORES
-      ========================================== */}
+      ===================================================== */}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 
@@ -470,9 +516,9 @@ const GestorComputadoras = ({
 
       </div>
 
-      {/* ==========================================
+      {/* =====================================================
           BUSCADOR Y FILTROS
-      ========================================== */}
+      ===================================================== */}
 
       <div className="bg-white rounded-lg shadow-sm border p-4">
 
@@ -487,9 +533,7 @@ const GestorComputadoras = ({
             <input
               type="text"
               value={busqueda}
-              onChange={e =>
-                setBusqueda(e.target.value)
-              }
+              onChange={e => setBusqueda(e.target.value)}
               placeholder="Buscar por código, Service Tag, sala, marca..."
               className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -504,9 +548,7 @@ const GestorComputadoras = ({
 
             <select
               value={filtroSala}
-              onChange={e =>
-                setFiltroSala(e.target.value)
-              }
+              onChange={e => setFiltroSala(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
 
@@ -514,7 +556,7 @@ const GestorComputadoras = ({
                 Todas las salas
               </option>
 
-              {salas.map(sala => (
+              {salasDisponibles.map(sala => (
                 <option
                   key={sala}
                   value={sala}
@@ -535,9 +577,7 @@ const GestorComputadoras = ({
 
             <select
               value={filtroEstado}
-              onChange={e =>
-                setFiltroEstado(e.target.value)
-              }
+              onChange={e => setFiltroEstado(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
 
@@ -573,9 +613,9 @@ const GestorComputadoras = ({
 
       </div>
 
-      {/* ==========================================
+      {/* =====================================================
           MENSAJE
-      ========================================== */}
+      ===================================================== */}
 
       {mensaje && (
         <div
@@ -589,9 +629,9 @@ const GestorComputadoras = ({
         </div>
       )}
 
-      {/* ==========================================
+      {/* =====================================================
           TABLA
-      ========================================== */}
+      ===================================================== */}
 
       <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
 
@@ -715,9 +755,9 @@ const GestorComputadoras = ({
                             .join(' ') || '—'}
                         </div>
 
-                        {computadora.sistema_operativo && (
+                        {computadora.numero_serie && (
                           <div className="text-xs text-gray-500 mt-1">
-                            {computadora.sistema_operativo}
+                            Serie: {computadora.numero_serie}
                           </div>
                         )}
 
@@ -814,9 +854,9 @@ const GestorComputadoras = ({
 
       </div>
 
-      {/* ==========================================
+      {/* =====================================================
           MODAL NUEVA / EDITAR
-      ========================================== */}
+      ===================================================== */}
 
       {mostrarFormulario && (
 
@@ -824,7 +864,7 @@ const GestorComputadoras = ({
 
           <div className="bg-white rounded-xl shadow-xl w-full max-w-5xl max-h-[90vh] flex flex-col">
 
-            {/* Cabecera */}
+            {/* CABECERA */}
 
             <div className="px-6 py-4 border-b flex justify-between items-center">
 
@@ -852,13 +892,13 @@ const GestorComputadoras = ({
 
             </div>
 
-            {/* Contenido */}
+            {/* CONTENIDO */}
 
             <div className="overflow-y-auto p-6 space-y-6">
 
-              {/* ======================================
-                  IDENTIFICACIÓN
-              ====================================== */}
+              {/* =================================================
+                  IDENTIFICACIÓN Y UBICACIÓN
+              ================================================= */}
 
               <div>
 
@@ -869,7 +909,6 @@ const GestorComputadoras = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
                   <Campo
-                    nombre="codigo"
                     etiqueta="Código / N.º de PC *"
                     placeholder="Ej. PC-001"
                     valor={formulario.codigo}
@@ -878,18 +917,36 @@ const GestorComputadoras = ({
                     }
                   />
 
-                  <Campo
-                    nombre="sala"
-                    etiqueta="Sala"
-                    placeholder="Ej. Sala 1"
-                    valor={formulario.sala}
-                    onChange={valor =>
-                      cambiarCampo('sala', valor)
-                    }
-                  />
+                  {/* SALA DESPLEGABLE */}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Sala
+                    </label>
+
+                    <select
+                      value={formulario.sala}
+                      onChange={e =>
+                        cambiarCampo('sala', e.target.value)
+                      }
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">
+                        Seleccionar sala
+                      </option>
+
+                      {salasDisponibles.map(sala => (
+                        <option
+                          key={sala}
+                          value={sala}
+                        >
+                          {sala}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
                   <Campo
-                    nombre="ubicacion"
                     etiqueta="Ubicación"
                     placeholder="Ej. Mesa 01"
                     valor={formulario.ubicacion}
@@ -899,7 +956,6 @@ const GestorComputadoras = ({
                   />
 
                   <Campo
-                    nombre="marca_pc"
                     etiqueta="Marca PC"
                     placeholder="Ej. Dell"
                     valor={formulario.marca_pc}
@@ -909,7 +965,6 @@ const GestorComputadoras = ({
                   />
 
                   <Campo
-                    nombre="modelo_pc"
                     etiqueta="Modelo PC"
                     placeholder="Ej. OptiPlex 7090"
                     valor={formulario.modelo_pc}
@@ -919,8 +974,7 @@ const GestorComputadoras = ({
                   />
 
                   <Campo
-                    nombre="service_tag"
-                    etiqueta="Service Tag / Serie"
+                    etiqueta="Service Tag"
                     placeholder="Ej. ABC123"
                     valor={formulario.service_tag}
                     onChange={valor =>
@@ -928,24 +982,45 @@ const GestorComputadoras = ({
                     }
                   />
 
+                  <Campo
+                    etiqueta="N.º de Serie"
+                    placeholder="Ej. SN123456789"
+                    valor={formulario.numero_serie}
+                    onChange={valor =>
+                      cambiarCampo('numero_serie', valor)
+                    }
+                  />
+
                 </div>
 
               </div>
 
-              {/* ======================================
-                  COMPONENTES
-              ====================================== */}
+              {/* =================================================
+                  COMPONENTES CPU
+              ================================================= */}
 
-              <div>
+              <div className="border-t pt-6">
 
-                <h4 className="text-lg font-semibold text-gray-800 mb-4">
-                  Componentes
-                </h4>
+                <TituloComponente
+                  
+                  titulo="Componentes CPU"
+                />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
                   <Campo
-                    nombre="cpu"
+                    etiqueta="Código de Inventario"
+                    placeholder="Ej. CPU-001"
+                    valor={formulario.cpu_codigo_inventario}
+                    onChange={valor =>
+                      cambiarCampo(
+                        'cpu_codigo_inventario',
+                        valor
+                      )
+                    }
+                  />
+
+                  <Campo
                     etiqueta="CPU"
                     placeholder="Ej. Intel Core i5"
                     valor={formulario.cpu}
@@ -955,7 +1030,6 @@ const GestorComputadoras = ({
                   />
 
                   <Campo
-                    nombre="ram_gb"
                     etiqueta="RAM (GB)"
                     tipo="number"
                     placeholder="Ej. 8"
@@ -966,7 +1040,6 @@ const GestorComputadoras = ({
                   />
 
                   <Campo
-                    nombre="disco"
                     etiqueta="Disco"
                     placeholder="Ej. SSD 480 GB"
                     valor={formulario.disco}
@@ -976,8 +1049,7 @@ const GestorComputadoras = ({
                   />
 
                   <Campo
-                    nombre="sistema_operativo"
-                    etiqueta="Sistema operativo"
+                    etiqueta="Sistema Operativo"
                     placeholder="Ej. Windows 11"
                     valor={formulario.sistema_operativo}
                     onChange={valor =>
@@ -988,9 +1060,37 @@ const GestorComputadoras = ({
                     }
                   />
 
+                </div>
+
+              </div>
+
+              {/* =================================================
+                  COMPONENTES MONITOR
+              ================================================= */}
+
+              <div className="border-t pt-6">
+
+                <TituloComponente
+                  
+                  titulo="Componentes Monitor"
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
                   <Campo
-                    nombre="monitor_marca"
-                    etiqueta="Monitor · Marca"
+                    etiqueta="Código de Inventario"
+                    placeholder="Ej. MON-001"
+                    valor={formulario.monitor_codigo_inventario}
+                    onChange={valor =>
+                      cambiarCampo(
+                        'monitor_codigo_inventario',
+                        valor
+                      )
+                    }
+                  />
+
+                  <Campo
+                    etiqueta="Marca"
                     placeholder="Ej. Dell"
                     valor={formulario.monitor_marca}
                     onChange={valor =>
@@ -1002,8 +1102,7 @@ const GestorComputadoras = ({
                   />
 
                   <Campo
-                    nombre="monitor_modelo"
-                    etiqueta="Monitor · Modelo"
+                    etiqueta="Modelo"
                     placeholder="Ej. P2419H"
                     valor={formulario.monitor_modelo}
                     onChange={valor =>
@@ -1015,8 +1114,8 @@ const GestorComputadoras = ({
                   />
 
                   <Campo
-                    nombre="monitor_serie"
-                    etiqueta="Monitor · Serie"
+                    etiqueta="N.º de Serie"
+                    placeholder="Ej. MON123456"
                     valor={formulario.monitor_serie}
                     onChange={valor =>
                       cambiarCampo(
@@ -1026,9 +1125,38 @@ const GestorComputadoras = ({
                     }
                   />
 
+                </div>
+
+              </div>
+
+              {/* =================================================
+                  COMPONENTES TECLADO
+              ================================================= */}
+
+              <div className="border-t pt-6">
+
+                <TituloComponente
+                  
+                  titulo="Componentes Teclado"
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
                   <Campo
-                    nombre="teclado_marca"
-                    etiqueta="Teclado · Marca"
+                    etiqueta="Código de Inventario"
+                    placeholder="Ej. TEC-001"
+                    valor={formulario.teclado_codigo_inventario}
+                    onChange={valor =>
+                      cambiarCampo(
+                        'teclado_codigo_inventario',
+                        valor
+                      )
+                    }
+                  />
+
+                  <Campo
+                    etiqueta="Marca"
+                    placeholder="Ej. Dell"
                     valor={formulario.teclado_marca}
                     onChange={valor =>
                       cambiarCampo(
@@ -1039,8 +1167,8 @@ const GestorComputadoras = ({
                   />
 
                   <Campo
-                    nombre="teclado_modelo"
-                    etiqueta="Teclado · Modelo"
+                    etiqueta="Modelo"
+                    placeholder="Ej. KB216"
                     valor={formulario.teclado_modelo}
                     onChange={valor =>
                       cambiarCampo(
@@ -1051,8 +1179,8 @@ const GestorComputadoras = ({
                   />
 
                   <Campo
-                    nombre="teclado_serie"
-                    etiqueta="Teclado · Serie"
+                    etiqueta="N.º de Serie"
+                    placeholder="Ej. TEC123456"
                     valor={formulario.teclado_serie}
                     onChange={valor =>
                       cambiarCampo(
@@ -1062,9 +1190,38 @@ const GestorComputadoras = ({
                     }
                   />
 
+                </div>
+
+              </div>
+
+              {/* =================================================
+                  COMPONENTES MOUSE
+              ================================================= */}
+
+              <div className="border-t pt-6">
+
+                <TituloComponente
+                  
+                  titulo="Componentes Mouse"
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
                   <Campo
-                    nombre="mouse_marca"
-                    etiqueta="Mouse · Marca"
+                    etiqueta="Código de Inventario"
+                    placeholder="Ej. MOU-001"
+                    valor={formulario.mouse_codigo_inventario}
+                    onChange={valor =>
+                      cambiarCampo(
+                        'mouse_codigo_inventario',
+                        valor
+                      )
+                    }
+                  />
+
+                  <Campo
+                    etiqueta="Marca"
+                    placeholder="Ej. Dell"
                     valor={formulario.mouse_marca}
                     onChange={valor =>
                       cambiarCampo(
@@ -1075,8 +1232,8 @@ const GestorComputadoras = ({
                   />
 
                   <Campo
-                    nombre="mouse_modelo"
-                    etiqueta="Mouse · Modelo"
+                    etiqueta="Modelo"
+                    placeholder="Ej. MS116"
                     valor={formulario.mouse_modelo}
                     onChange={valor =>
                       cambiarCampo(
@@ -1087,8 +1244,8 @@ const GestorComputadoras = ({
                   />
 
                   <Campo
-                    nombre="mouse_serie"
-                    etiqueta="Mouse · Serie"
+                    etiqueta="N.º de Serie"
+                    placeholder="Ej. MOU123456"
                     valor={formulario.mouse_serie}
                     onChange={valor =>
                       cambiarCampo(
@@ -1102,11 +1259,11 @@ const GestorComputadoras = ({
 
               </div>
 
-              {/* ======================================
-                  ESTADO
-              ====================================== */}
+              {/* =================================================
+                  ESTADO Y OBSERVACIONES
+              ================================================= */}
 
-              <div>
+              <div className="border-t pt-6">
 
                 <h4 className="text-lg font-semibold text-gray-800 mb-4">
                   Estado
@@ -1145,7 +1302,6 @@ const GestorComputadoras = ({
                   </div>
 
                   <Campo
-                    nombre="observaciones"
                     etiqueta="Observaciones"
                     placeholder="Observaciones adicionales..."
                     valor={formulario.observaciones}
@@ -1163,9 +1319,9 @@ const GestorComputadoras = ({
 
             </div>
 
-            {/* ======================================
+            {/* =================================================
                 PIE DEL MODAL
-            ====================================== */}
+            ================================================= */}
 
             <div className="px-6 py-4 border-t flex justify-end gap-3">
 
