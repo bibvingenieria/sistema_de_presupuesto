@@ -366,6 +366,238 @@ export const useSupabase = () => {
   }
 
     // ==========================================
+  // SOLICITUD DE MATERIALES
+  // ==========================================
+
+  // Cargar todas las solicitudes con sus materiales y recepciones
+  const cargarSolicitudesMateriales = async () => {
+    try {
+      setLoading(true)
+
+      const { data, error } = await supabase
+        .from('solicitudes_materiales')
+        .select(`
+          id,
+          codigo,
+          fecha_solicitud,
+          observacion,
+          detalle_solicitudes_materiales (
+            id,
+            cantidad_solicitada,
+            material_id,
+            materiales (
+              id,
+              codigo,
+              nombre
+            ),
+            recepciones_materiales (
+              id,
+              cantidad,
+              fecha_recepcion,
+              observacion,
+              movimiento_material_id
+            )
+          )
+        `)
+        .order('fecha_solicitud', { ascending: false })
+
+      if (error) throw error
+
+      return data || []
+    } catch (err) {
+      setError(err.message)
+      return []
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Crear una nueva solicitud de material
+  const crearSolicitudMaterial = async (
+    codigo,
+    materialId,
+    cantidadSolicitada,
+    observacion = null
+  ) => {
+    try {
+      setLoading(true)
+
+      // Crear la solicitud principal
+      const { data: solicitud, error: solicitudError } = await supabase
+        .from('solicitudes_materiales')
+        .insert([{
+          codigo,
+          observacion
+        }])
+        .select()
+        .single()
+
+      if (solicitudError) throw solicitudError
+
+      // Crear el detalle de la solicitud
+      const { data: detalle, error: detalleError } = await supabase
+        .from('detalle_solicitudes_materiales')
+        .insert([{
+          solicitud_id: solicitud.id,
+          material_id: materialId,
+          cantidad_solicitada: parseInt(cantidadSolicitada)
+        }])
+        .select(`
+          *,
+          materiales (
+            id,
+            codigo,
+            nombre
+          )
+        `)
+        .single()
+
+      if (detalleError) {
+        // Si falla el detalle, eliminar la solicitud creada
+        await supabase
+          .from('solicitudes_materiales')
+          .delete()
+          .eq('id', solicitud.id)
+
+        throw detalleError
+      }
+
+      return {
+        ...solicitud,
+        detalle_solicitudes_materiales: [detalle]
+      }
+    } catch (err) {
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Cargar el detalle completo de una solicitud
+  const cargarDetalleSolicitudMaterial = async (solicitudId) => {
+    try {
+      setLoading(true)
+
+      const { data, error } = await supabase
+        .from('solicitudes_materiales')
+        .select(`
+          id,
+          codigo,
+          fecha_solicitud,
+          observacion,
+          detalle_solicitudes_materiales (
+            id,
+            cantidad_solicitada,
+            material_id,
+            materiales (
+              id,
+              codigo,
+              nombre
+            ),
+            recepciones_materiales (
+              id,
+              cantidad,
+              fecha_recepcion,
+              observacion,
+              movimiento_material_id
+            )
+          )
+        `)
+        .eq('id', solicitudId)
+        .single()
+
+      if (error) throw error
+
+      return data
+    } catch (err) {
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Registrar una recepción y aumentar automáticamente el stock
+  const registrarRecepcionMaterial = async (
+    detalleSolicitudId,
+    cantidad,
+    fechaRecepcion = null,
+    observacion = null
+  ) => {
+    try {
+      setLoading(true)
+
+      const { data, error } = await supabase.rpc(
+        'registrar_recepcion_material',
+        {
+          p_detalle_solicitud_id: detalleSolicitudId,
+          p_cantidad: parseInt(cantidad),
+          p_fecha_recepcion: fechaRecepcion
+            ? `${fechaRecepcion}T00:00:00`
+            : null,
+          p_observacion: observacion
+        }
+      )
+
+      if (error) throw error
+
+      return data
+    } catch (err) {
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Eliminar una recepción y revertir automáticamente el stock
+  const eliminarRecepcionMaterial = async (recepcionId) => {
+    try {
+      setLoading(true)
+
+      const { data, error } = await supabase.rpc(
+        'eliminar_recepcion_material',
+        {
+          p_recepcion_id: recepcionId
+        }
+      )
+
+      if (error) throw error
+
+      return data
+    } catch (err) {
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Eliminar una solicitud completa y revertir sus recepciones
+  const eliminarSolicitudMaterial = async (solicitudId) => {
+    try {
+      setLoading(true)
+
+      const { data, error } = await supabase.rpc(
+        'eliminar_solicitud_material',
+        {
+          p_solicitud_id: solicitudId
+        }
+      )
+
+      if (error) throw error
+
+      return data
+    } catch (err) {
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+    // ==========================================
   // INVENTARIO DE COMPUTADORAS
   // ==========================================
 
@@ -486,6 +718,14 @@ export const useSupabase = () => {
     cargarStockMateriales,
     cargarMovimientosMaterial,
     registrarMovimientoMaterial,
+
+    cargarSolicitudesMateriales,
+    crearSolicitudMaterial,
+    cargarDetalleSolicitudMaterial,
+    registrarRecepcionMaterial,
+    eliminarRecepcionMaterial,
+    eliminarSolicitudMaterial,
+
     cargarComputadoras,
     agregarComputadora,
     editarComputadora,

@@ -10,6 +10,7 @@ import GestorInventario from './GestorInventario'
 import GestorStock from './GestorStock'
 import AdminNav from './AdminNav'
 import GestorComputadoras from './GestorComputadoras'
+import GestorSolicitudesMateriales from './GestorSolicitudesMateriales'
 
 // Datos fijos de la unidad (según tu imagen)
 const UNIDAD_RESPONSABLE = '030000 FAC'
@@ -53,7 +54,13 @@ const BudgetSystem = () => {
     cargarComputadoras,
     agregarComputadora,
     editarComputadora,
-    eliminarComputadora
+    eliminarComputadora,
+    cargarSolicitudesMateriales,
+    crearSolicitudMaterial,
+    cargarDetalleSolicitudMaterial,
+    registrarRecepcionMaterial,
+    eliminarRecepcionMaterial,
+    eliminarSolicitudMaterial
 } = useSupabase()
 
   // Cargar datos iniciales
@@ -471,18 +478,21 @@ const BudgetSystem = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+  <div className="min-h-screen bg-gray-50">
+
+    {/* Banner del encabezado */}
+    <div className="relative w-full h-[150px] overflow-hidden">
+
+      <img 
+        src="/REPOSITORIO DE EXAMENES.png" 
+        alt="Repositorio de Exámenes" 
+        className="w-full h-full object-cover"
+      />
+
       {/* Botón de cerrar sesión */}
       <AdminNav />
-      
-      {/* Banner del encabezado */}
-      <div className="w-full h-[150px] overflow-hidden">
-        <img 
-          src="/REPOSITORIO DE EXAMENES.png" 
-          alt="Repositorio de Exámenes" 
-          className="w-full h-full object-cover"
-        />
-      </div>
+
+    </div>
       
       <div className="p-4">
         <div className="max-w-7xl mx-auto">
@@ -558,6 +568,18 @@ const BudgetSystem = () => {
               >   
                 📦 Gestión de Materiales
               </button>
+
+                <button
+                onClick={() => setVistaActual('solicitudes')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  vistaActual === 'solicitudes'
+                    ? 'border-emerald-500 text-emerald-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                📋 Solicitud de Materiales
+              </button>
+
               <button
                 onClick={() => setVistaActual('inventario')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
@@ -683,12 +705,22 @@ const BudgetSystem = () => {
               onEliminarMaterial={eliminarMaterialCatalogo}
             />
           </div>
-        ) : vistaActual === 'materiales' ? (
+                ) : vistaActual === 'materiales' ? (
             <GestorStock
               materiales={materialesDisponibles}
               cargarStockMateriales={cargarStockMateriales}
               cargarMovimientosMaterial={cargarMovimientosMaterial}
               registrarMovimientoMaterial={registrarMovimientoMaterial}
+            />
+        ) : vistaActual === 'solicitudes' ? (
+            <GestorSolicitudesMateriales
+              materiales={materialesDisponibles}
+              cargarSolicitudesMateriales={cargarSolicitudesMateriales}
+              crearSolicitudMaterial={crearSolicitudMaterial}
+              cargarDetalleSolicitudMaterial={cargarDetalleSolicitudMaterial}
+              registrarRecepcionMaterial={registrarRecepcionMaterial}
+              eliminarRecepcionMaterial={eliminarRecepcionMaterial}
+              eliminarSolicitudMaterial={eliminarSolicitudMaterial}
             />
         ) : vistaActual === 'computadoras' ? (
             <GestorComputadoras
