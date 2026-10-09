@@ -11,6 +11,8 @@ import GestorStock from './GestorStock'
 import AdminNav from './AdminNav'
 import GestorComputadoras from './GestorComputadoras'
 import GestorSolicitudesMateriales from './GestorSolicitudesMateriales'
+import GestorOtrosEquipos from './GestorOtrosEquipos'
+
 
 // Datos fijos de la unidad (según tu imagen)
 const UNIDAD_RESPONSABLE = '030000 FAC'
@@ -19,6 +21,7 @@ const ACTIVIDAD = '0009 ACTIVIDAD OPERATIVA'
 
 const BudgetSystem = () => {
   const [vistaActual, setVistaActual] = useState('presupuesto') // 'presupuesto', 'catalogo', 'inventario'
+  const [subVistaInventarioPC, setSubVistaInventarioPC] = useState('computadoras')
   const [articulosPresupuesto, setArticulosPresupuesto] = useState([])
   const [todosArticulos, setTodosArticulos] = useState([]) // 🔥 NUEVO: Guardar todos los artículos (MAT + LIB)
   const [materialesDisponibles, setMaterialesDisponibles] = useState([])
@@ -60,7 +63,11 @@ const BudgetSystem = () => {
     cargarDetalleSolicitudMaterial,
     registrarRecepcionMaterial,
     eliminarRecepcionMaterial,
-    eliminarSolicitudMaterial
+    eliminarSolicitudMaterial,
+    cargarOtrosEquipos,
+    agregarOtroEquipo,
+    editarOtroEquipo,
+    eliminarOtroEquipo,
 } = useSupabase()
 
   // Cargar datos iniciales
@@ -79,7 +86,7 @@ const BudgetSystem = () => {
           ACTIVIDAD
         )
         
-        // 🔥 PROCESAR TODOS LOS ARTÍCULOS (MAT y LIB)
+        // PROCESAR TODOS LOS ARTÍCULOS (MAT y LIB)
         const articulosFormateados = presupuesto.map(item => {
           const esLibro = item.materiales.codigo.startsWith('LIB')
           const precio = esLibro ? 0 : item.precio_presupuesto
@@ -478,21 +485,18 @@ const BudgetSystem = () => {
   }
 
   return (
-  <div className="min-h-screen bg-gray-50">
-
-    {/* Banner del encabezado */}
-    <div className="relative w-full h-[150px] overflow-hidden">
-
-      <img 
-        src="/REPOSITORIO DE EXAMENES.png" 
-        alt="Repositorio de Exámenes" 
-        className="w-full h-full object-cover"
-      />
-
+    <div className="min-h-screen bg-gray-50">
       {/* Botón de cerrar sesión */}
       <AdminNav />
-
-    </div>
+      
+      {/* Banner del encabezado */}
+      <div className="w-full h-[150px] overflow-hidden">
+        <img 
+          src="/REPOSITORIO DE EXAMENES.png" 
+          alt="Repositorio de Exámenes" 
+          className="w-full h-full object-cover"
+        />
+      </div>
       
       <div className="p-4">
         <div className="max-w-7xl mx-auto">
@@ -722,13 +726,52 @@ const BudgetSystem = () => {
               eliminarRecepcionMaterial={eliminarRecepcionMaterial}
               eliminarSolicitudMaterial={eliminarSolicitudMaterial}
             />
-        ) : vistaActual === 'computadoras' ? (
-            <GestorComputadoras
-              cargarComputadoras={cargarComputadoras}
-              agregarComputadora={agregarComputadora}
-              editarComputadora={editarComputadora}
-              eliminarComputadora={eliminarComputadora}
-            />
+        
+) : vistaActual === 'computadoras' ? (
+  <div className="space-y-6">
+
+    <div className="flex flex-wrap gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+      <button
+        onClick={() => setSubVistaInventarioPC('computadoras')}
+        className={`rounded-lg px-5 py-3 font-medium transition-colors ${
+          subVistaInventarioPC === 'computadoras'
+            ? 'bg-emerald-600 text-white shadow-sm'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        }`}
+      >
+        💻 Computadoras
+      </button>
+
+      <button
+        onClick={() => setSubVistaInventarioPC('otros')}
+        className={`rounded-lg px-5 py-3 font-medium transition-colors ${
+          subVistaInventarioPC === 'otros'
+            ? 'bg-emerald-600 text-white shadow-sm'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        }`}
+      >
+        📦 Otros equipos
+      </button>
+    </div>
+
+    {subVistaInventarioPC === 'computadoras' ? (
+      <GestorComputadoras
+        cargarComputadoras={cargarComputadoras}
+        agregarComputadora={agregarComputadora}
+        editarComputadora={editarComputadora}
+        eliminarComputadora={eliminarComputadora}
+      />
+    ) : (
+      <GestorOtrosEquipos
+        cargarOtrosEquipos={cargarOtrosEquipos}
+        agregarOtroEquipo={agregarOtroEquipo}
+        editarOtroEquipo={editarOtroEquipo}
+        eliminarOtroEquipo={eliminarOtroEquipo}
+      />
+    )}
+
+  </div>
+
         ) : (
           // Vista del Gestor de Inventario
           <div>

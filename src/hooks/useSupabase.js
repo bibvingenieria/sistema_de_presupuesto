@@ -702,6 +702,97 @@ export const useSupabase = () => {
     }
   }
 
+  // ==========================================
+  // INVENTARIO DE OTROS EQUIPOS
+  // ==========================================
+
+  // Cargar todos los equipos
+  const cargarOtrosEquipos = async () => {
+    try {
+      setLoading(true)
+
+      const { data, error } = await supabase
+        .from('otros_equipos')
+        .select('*')
+        .order('nombre')
+
+      if (error) throw error
+      return data || []
+    } catch (err) {
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Agregar equipo
+  const agregarOtroEquipo = async (equipo) => {
+    try {
+      setLoading(true)
+
+      const { data, error } = await supabase
+        .from('otros_equipos')
+        .insert([equipo])
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    } catch (err) {
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Editar equipo
+  const editarOtroEquipo = async (id, equipo) => {
+    try {
+      setLoading(true)
+
+      const { data, error } = await supabase
+        .from('otros_equipos')
+        .update({
+          ...equipo,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    } catch (err) {
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Eliminar equipo
+  const eliminarOtroEquipo = async (id) => {
+    try {
+      setLoading(true)
+
+      const { error } = await supabase
+        .from('otros_equipos')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+      return true
+    } catch (err) {
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+
   return {
     loading,
     error,
@@ -729,7 +820,12 @@ export const useSupabase = () => {
     cargarComputadoras,
     agregarComputadora,
     editarComputadora,
-    eliminarComputadora
+    eliminarComputadora,
+
+    cargarOtrosEquipos,
+    agregarOtroEquipo,
+    editarOtroEquipo,
+    eliminarOtroEquipo
     
   }
 }
