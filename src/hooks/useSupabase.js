@@ -793,6 +793,99 @@ export const useSupabase = () => {
   }
 
 
+  // ==========================================
+  // INVENTARIO DE MOBILIARIO
+  // ==========================================
+
+  // Cargar todo el mobiliario
+  const cargarMobiliario = async () => {
+    try {
+      setLoading(true)
+
+      const { data, error } = await supabase
+        .from('mobiliario')
+        .select('*')
+        .order('nombre')
+
+      if (error) throw error
+
+      return data || []
+    } catch (err) {
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Agregar mobiliario
+  const agregarMobiliario = async (mobiliario) => {
+    try {
+      setLoading(true)
+
+      const { data, error } = await supabase
+        .from('mobiliario')
+        .insert([mobiliario])
+        .select()
+        .single()
+
+      if (error) throw error
+
+      return data
+    } catch (err) {
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Editar mobiliario
+  const editarMobiliario = async (id, mobiliario) => {
+    try {
+      setLoading(true)
+
+      const { data, error } = await supabase
+        .from('mobiliario')
+        .update(mobiliario)
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      return data
+    } catch (err) {
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Eliminar mobiliario
+  const eliminarMobiliario = async (id) => {
+    try {
+      setLoading(true)
+
+      const { error } = await supabase
+        .from('mobiliario')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+
+      return true
+    } catch (err) {
+      setError(err.message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+
+
   return {
     loading,
     error,
@@ -825,7 +918,12 @@ export const useSupabase = () => {
     cargarOtrosEquipos,
     agregarOtroEquipo,
     editarOtroEquipo,
-    eliminarOtroEquipo
+    eliminarOtroEquipo,
+
+    cargarMobiliario,
+    agregarMobiliario,
+    editarMobiliario,
+    eliminarMobiliario
     
   }
 }

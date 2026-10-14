@@ -12,6 +12,7 @@ import AdminNav from './AdminNav'
 import GestorComputadoras from './GestorComputadoras'
 import GestorSolicitudesMateriales from './GestorSolicitudesMateriales'
 import GestorOtrosEquipos from './GestorOtrosEquipos'
+import GestorMobiliario from './GestorMobiliario'
 
 
 // Datos fijos de la unidad (según tu imagen)
@@ -68,6 +69,10 @@ const BudgetSystem = () => {
     agregarOtroEquipo,
     editarOtroEquipo,
     eliminarOtroEquipo,
+    cargarMobiliario,
+    agregarMobiliario,
+    editarMobiliario,
+    eliminarMobiliario,
 } = useSupabase()
 
   // Cargar datos iniciales
@@ -603,7 +608,7 @@ const BudgetSystem = () => {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                💻 Inventario de PC
+                💻 Inventario de Salas
               </button>
               
             </nav>
@@ -752,6 +757,17 @@ const BudgetSystem = () => {
       >
         📦 Otros equipos
       </button>
+
+      <button
+        onClick={() => setSubVistaInventarioPC('mobiliario')}
+        className={`rounded-lg px-5 py-3 font-medium transition-colors ${
+          subVistaInventarioPC === 'mobiliario'
+            ? 'bg-emerald-600 text-white shadow-sm'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        }`}
+      >
+        🪑 Mobiliario
+      </button>
     </div>
 
     {subVistaInventarioPC === 'computadoras' ? (
@@ -761,12 +777,19 @@ const BudgetSystem = () => {
         editarComputadora={editarComputadora}
         eliminarComputadora={eliminarComputadora}
       />
-    ) : (
+    ) : subVistaInventarioPC === 'otros' ? (
       <GestorOtrosEquipos
         cargarOtrosEquipos={cargarOtrosEquipos}
         agregarOtroEquipo={agregarOtroEquipo}
         editarOtroEquipo={editarOtroEquipo}
         eliminarOtroEquipo={eliminarOtroEquipo}
+      />
+    ) : (
+      <GestorMobiliario
+        cargarMobiliario={cargarMobiliario}
+        agregarMobiliario={agregarMobiliario}
+        editarMobiliario={editarMobiliario}
+        eliminarMobiliario={eliminarMobiliario}
       />
     )}
 
@@ -784,7 +807,7 @@ const BudgetSystem = () => {
               </button>
             </div>
             <GestorInventario 
-              articulosPresupuesto={todosArticulos} // 🔥 PASAR TODOS LOS ARTÍCULOS (MAT + LIB)
+              articulosPresupuesto={todosArticulos} 
               onActualizarInventario={(inventarioData) => {
                 console.log('Datos del inventario:', inventarioData)
               }}
