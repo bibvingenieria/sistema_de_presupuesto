@@ -6,7 +6,9 @@ const UBICACIONES = [
   'Sala B',
   'Sala C',
   'Sala de Control',
-  'Jefatura'
+  'Jefatura',
+  'Hall',
+  'Servidor'
 ]
 
 const ESTADOS = [
